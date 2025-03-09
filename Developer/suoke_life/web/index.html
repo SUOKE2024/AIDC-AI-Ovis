@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="索克生活APP - 健康养生管理平台">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="suoke_life">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- 添加摄像头和麦克风权限 -->
+  <meta name="permissions-policy" content="camera=*, microphone=*">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>suoke_life</title>
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+  <!-- 在脚本开始之前添加权限请求处理 -->
+  <script>
+    // 请求麦克风和摄像头权限
+    async function requestPermissions() {
+      try {
+        console.log('请求权限中...');
+        
+        // 检查媒体设备是否可用
+        if (!navigator.mediaDevices) {
+          console.error('媒体设备API不可用，可能是非安全上下文或浏览器不支持');
+          return;
+        }
+        
+        // 请求摄像头权限
+        await navigator.mediaDevices.getUserMedia({ video: true })
+          .then(stream => {
+            console.log('摄像头权限获取成功');
+            stream.getTracks().forEach(track => track.stop());
+          })
+          .catch(e => console.error('摄像头权限请求失败:', e));
+          
+        // 请求麦克风权限
+        await navigator.mediaDevices.getUserMedia({ audio: true })
+          .then(stream => {
+            console.log('麦克风权限获取成功');
+            stream.getTracks().forEach(track => track.stop());
+          })
+          .catch(e => console.error('麦克风权限请求失败:', e));
+          
+        console.log('权限请求完成');
+      } catch (e) {
+        console.error('权限请求出错:', e);
+      }
+    }
+    
+    // 页面加载完成后请求权限
+    window.addEventListener('load', function() {
+      // 延迟2秒请求权限，确保Flutter应用已经初始化
+      setTimeout(requestPermissions, 1000);
+    });
+  </script>
+  
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

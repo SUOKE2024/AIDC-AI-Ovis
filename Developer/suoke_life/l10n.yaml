@@ -1,0 +1,9 @@
+arb-dir: assets/locales/arb
+template-arb-file: intl_zh_CN.arb
+output-localization-file: app_localizations.dart
+output-class: GeneratedAppLocalizations
+output-dir: lib/core/localization/generated
+synthetic-package: false
+preferred-supported-locales: [zh_CN, en_US, zh_TW, ja_JP]
+use-deferred-loading: false 
+untranslated-messages-file: assets/locales/untranslated_messages.txt 

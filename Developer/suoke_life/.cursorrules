@@ -1,1 +1,348 @@
-{"name":"SuoKe Life Development Guide","version":"1.0.0","description":"Development standards and guidelines for SuoKe Life project","language_settings":{"default":"en","available":["en","zh"],"files":{"en":".cursorrules.en","zh":".cursorrules.zh"}}}
+# 索克生活APP项目开发规范
+
+## 项目概述
+- 项目名称：索克生活APP
+- 项目目标：索克生活APP由AI智能体驱动，自主学习、自主进化，自主运营。是一个现代生活（健康养生）管理平台，融合中国传统中医辨证治未病和现代预防医学理念，提供全方位的健康管理服务。
+- 领域：中国传统中医辨证治未病和现代预防医学
+
+## 项目架构
+- 使用Flutter框架进行跨平台开发
+- 采用Clean Architecture架构模式
+- 使用Riverpod进行状态管理和依赖注入（必须）
+- 使用auto_route进行路由管理（必须）
+- 在整个项目中保持统一的架构风格和技术选择
+
+## 代码规范
+- 使用Dart 3.0+语法
+- 命名规范：
+  - 类名：驼峰命名法，首字母大写
+  - 函数名：驼峰命名法，首字母小写
+  - 变量名：驼峰命名法，首字母小写
+  - 常量名：全大写，下划线分隔
+- 文件组织规范：
+  - lib/
+    - core/：核心功能和工具
+      - constants/：常量定义
+      - database/：数据库核心组件
+      - network/：网络请求相关组件
+      - router/：路由管理
+      - storage/：存储相关核心组件
+      - sync/：数据同步相关组件
+      - theme/：主题相关
+      - utils/：通用工具函数
+      - widgets/：核心通用组件
+    - data/：数据层
+      - datasources/：数据源接口和实现
+        - local/：本地数据源
+        - remote/：远程数据源
+      - models/：数据模型定义
+      - repositories/：存储库实现
+    - domain/：领域层
+      - entities/：领域实体定义
+      - repositories/：存储库接口定义
+      - usecases/：用例定义
+    - presentation/：表现层
+      - home/：首页（聊天频道）
+      - suoke/：SUOKE（服务频道）
+      - explore/：探索（探索频道）
+      - life/：LIFE（健康生活方式）
+      - profile/：我的（个人设置、系统管理员）
+    - di/：依赖注入
+      - providers.dart：主Provider导出文件
+      - providers/：按功能模块分类的Provider
+    - ai_agents/：AI代理相关功能
+      - config/：配置
+      - core/：核心功能
+      - models/：AI模型
+      - rag/：RAG相关
+      - services/：微服务
+      - utils/：AI工具函数
+    - app.dart：应用程序入口
+    - main.dart：主函数
+- 导入规范：
+  - 使用相对路径导入
+  - 对于可能冲突的类名，必须使用命名空间 `as` 语法
+  - 例如：`import '../../ai_agents/models/rag_result.dart' as ai_models;`
+  - 保持导入语句的组织，按照 Dart 标准库、第三方库、项目内部库的顺序排列
+- 废弃API处理：
+  - 避免使用被标记为废弃的API
+  - 使用 `withAlpha((value * 255).toInt())` 替代 `withOpacity(value)`
+  - 颜色透明度处理统一使用 `withAlpha` 方法
+
+## 数据架构规范
+### 1. 数据分层结构
+- 严格遵循Clean Architecture，数据相关代码按以下层次组织：
+  - `domain/entities/`：领域实体定义
+  - `domain/repositories/`：存储库接口定义
+  - `data/models/`：数据模型定义
+  - `data/repositories/`：存储库实现
+  - `data/datasources/`：数据源接口和实现
+  - `core/database/`：数据库核心组件
+  - `core/storage/`：存储相关核心组件
+  - `core/network/`：网络请求相关组件
+  - `core/sync/`：数据同步相关组件
+
+### 2. 本地数据库规范
+- 使用SQLite作为本地数据库引擎
+- 所有表结构定义集中在`lib/core/database/database_schema.dart`
+- 表名使用下划线命名法，如`health_data`，`knowledge_nodes`
+- 表名常量命名为`table{PascalCase}`，如`tableHealthData`
+- 字段命名统一使用下划线命名法
+- 每个表必须包含创建时间(`created_at`)和更新时间(`updated_at`)字段
+- 所有表必须定义主键，推荐使用UUID字符串
+- 外键关系必须明确定义，并设置级联删除规则
+
+### 3. 数据模型规范
+- 数据模型必须实现`toJson()`和`fromJson()`方法
+- 数据模型必须提供与领域实体的相互转换方法
+- 模型命名为`{EntityName}Model`，如`UserModel`，`HealthDataModel`
+- 使用`@JsonSerializable()`注解简化JSON序列化
+
+### 4. 数据源规范
+- 定义清晰的数据源接口，实现本地和远程数据源
+- 本地数据源类命名为`{Entity}LocalDataSource`
+- 远程数据源类命名为`{Entity}RemoteDataSource`
+- API服务类命名为`{Entity}ApiService`
+- 所有数据源方法必须处理异常并转换为应用异常
+
+### 5. 存储库规范
+- 存储库实现必须处理本地和远程数据源的协调
+- 优先从本地数据源获取数据，本地失败时尝试远程获取
+- 数据更新操作必须同时更新本地和远程（如果网络可用）
+- 存储库实现必须实现相应的领域接口
+
+### 6. 数据同步规范
+- 使用`SyncManager`管理数据同步
+- 支持以下同步触发机制：
+  - 定时同步（默认每6小时）
+  - 网络状态变化时同步
+  - 应用启动时同步
+  - 手动触发同步
+- 同步操作必须具有重试机制和错误处理
+- 同步状态必须持久化，以便恢复同步进度
+
+### 7. 知识库和知识图谱规范
+- 知识节点和关系必须按标准模式存储
+- 所有知识内容必须支持向量化处理
+- 向量存储接口必须支持相似度检索
+- RAG服务必须支持多种检索策略
+- 所有文档必须包含元数据以支持过滤
+
+### 8. 数据安全规范
+- 敏感数据必须使用`SecureStorage`存储
+- 数据库操作必须使用参数化查询防止SQL注入
+- 网络传输数据必须加密
+- 用户认证信息必须安全存储并定期更新
+
+### 9. 数据集与训练集规范
+- 数据集目录组织与命名：
+  - `assets/datasets/`：数据集存储根目录
+  - `assets/datasets/{category}/{dataset_name}/`：具体数据集目录
+  - 数据集文件命名遵循`{dataset_name}_v{version}_{type}.{ext}`格式
+  
+- 数据集分类管理：
+  - 中医特色数据集：包括四诊合参数据、中医知识体系、临床案例
+  - 多模态数据集：包括生物声学数据集、医学影像数据集、方言数据集
+  - 基础健康数据集：包括健康指标参考数据、营养与饮食数据
+  
+- 训练集构建规范：
+  - 训练集/验证集/测试集比例为70:15:15
+  - 所有数据集必须有明确版本号和完整变更记录
+  - 训练集必须包含足够的数据多样性和代表性
+  
+- 数据质量控制：
+  - 所有数据集必须经过数据清洗和质量评估
+  - 标注数据必须经过多人标注和专家审核
+  - 所有数据集必须保持更新并定期验证有效性
+  
+- 多模态数据处理：
+  - 音频数据：标准化采样率和编码格式，提取MFCC等特征
+  - 图像数据：标准化分辨率和光照条件，提取图像特征
+  - 文本数据：进行分词、去停用词和语义向量化
+
+- 详细规范参考`docs/DATASETS.md`文档
+
+## Riverpod 使用规范
+- **严格采用** Riverpod 进行依赖注入和状态管理，禁止混用其他状态管理库
+- Provider定义标准:
+  - 全局Provider统一存放在 `lib/di/providers/` 目录下，按功能模块分类
+  - 主文件 `lib/di/providers.dart` 仅用于导出所有分类的provider文件
+  - 核心服务Provider放在 `lib/di/providers/core_providers.dart`
+  - 用户相关Provider放在 `lib/di/providers/user_providers.dart`
+  - AI代理相关Provider放在 `lib/di/providers/ai_providers.dart`
+  - 路由相关Provider放在 `lib/di/providers/router_providers.dart`
+  - 其他功能性Provider存放在对应的文件中，如 `lib/di/providers/chat_providers.dart`, `lib/di/providers/health_providers.dart`
+  - 模块内局部Provider放在对应模块目录下的 `providers.dart` 文件中
+  - 所有Provider必须添加适当注释说明用途
+
+- Provider命名约定:
+  - 存储库Provider：`xxxRepositoryProvider`
+  - 服务Provider：`xxxServiceProvider`
+  - 状态Provider：`xxxStateProvider` 或 `xxxProvider`
+  - 控制器Provider：`xxxControllerProvider`
+  - 异步数据Provider：`xxxAsyncProvider` 或 `xxxFutureProvider`
+  - 本地数据源Provider: `xxxLocalDataSourceProvider`
+  - 远程数据源Provider: `xxxRemoteDataSourceProvider`
+  - 用例Provider: `xxxUseCaseProvider`
+
+- Provider类型选择指南:
+  - 使用 `Provider` 提供只读依赖
+  - 使用 `StateProvider` 提供简单可变状态
+  - 使用 `StateNotifierProvider` 提供复杂状态和业务逻辑
+  - 使用 `FutureProvider` 提供异步加载数据
+  - 使用 `StreamProvider` 提供流式数据
+  - 使用 `ChangeNotifierProvider` 仅在与现有 ChangeNotifier 集成时
+
+- Provider间依赖管理:
+  - 使用 `ref.watch()` 监听provider的变化
+  - 使用 `ref.read()` 仅读取一次provider的值
+  - 避免在provider之间创建循环依赖
+  - 对于需要共享的复杂状态，考虑拆分为多个细粒度provider
+
+- 完全禁止使用GetIt或其他服务定位器，所有依赖注入必须通过Riverpod实现
+
+## auto_route 使用规范
+- 路由定义统一存放在 `lib/core/router/` 目录下
+- 主路由配置文件命名为 `app_router.dart`
+- 遵循以下命名约定:
+  - 路由定义类：`AppRouter`
+  - 路由常量：`AppRoutes`
+  - 路由守卫：`AuthRouteGuard`
+
+- 路由配置规范:
+  - 使用自动生成的路由定义，避免手动配置路由
+  - 所有页面必须使用 `@RoutePage()` 注解
+  - 所有路由参数必须明确定义类型
+  - 路由守卫必须实现 `AutoRouteGuard`
+  - 路由观察者必须实现 `AutoRouteObserver`
+  - 路由名称必须使用大驼峰命名法，如：`LoginRoute`, `HomeRoute`, `RAGQueryRoute`
+
+## UI设计规范
+- 遵循UI设计优化方案中的设计细节
+- 使用主题颜色：品牌主色调为索克绿 (0xFF35BB78)、辅色调为索克橙 (0xFFFF6800)
+- 圆角：统一使用8px圆角，卡片使用16px圆角
+- 字体：使用系统默认字体
+- 间距：遵循8px网格系统
+- 动画：使用平滑过渡动画，持续时间控制在300-1500ms之间
+- 骨架屏：在数据加载期间使用骨架屏提供良好的用户体验
+- 按钮：使用带有触觉反馈的按钮，提供明确的交互状态
+
+## 通用组件库
+- 使用项目内置的通用组件库，包括：
+  - AnimatedGradientCard：带动画渐变背景的卡片
+  - AnimatedPressButton：带3D按压效果的按钮
+  - SkeletonLoading：骨架屏加载组件
+  - FormFieldWrapper：表单字段包装器
+  - FeatureCard：功能卡片组件
+  - 其他自定义组件
+
+## 功能模块
+- 首页（聊天频道）
+- SUOKE（服务频道）
+- 探索（搜索频道）
+- LIFE（生活频道）
+- 我的（系统设置）
+- 知识图谱与健康画像数据可视化应用
+- RAG知识增强模块
+- TCM特色功能模块
+- 食农结合服务模块
+
+## TCM特色功能规范
+- 体质识别系统：
+  - 提供九种体质识别模块
+  - 整合舌诊、面诊等四诊功能
+  - 构建体质-症状-调理方案链路
+- 中医知识库：
+  - 构建标准化中医术语体系
+  - 实现经典文献解读功能
+  - 开发专业TCM RAG系统
+- 命名规范：
+  - 体质类型：`ConstitutionType`
+  - 四诊数据：`FourDiagnosticData`
+  - 中医术语：`TCMTerminology`
+  - 调理方案：`HealthRegimen`
+
+## 食农结合功能规范
+- 食疗系统：
+  - 实现体质食疗推荐
+  - 开发节气饮食指导
+  - 构建情绪食疗功能
+- 农产品平台：
+  - 实现优质农产品目录
+  - 开发"AR玉米迷宫探宝"功能
+  - 构建农事体验活动平台
+
+## AI功能规范
+- 使用多模态模型支持图像、文本、语音、视频输入
+- 实现RAG（检索增强生成）提高回复质量
+- 支持远程知识库、数据集、训练集
+- 针对健康养生领域进行优化
+
+## 第三方库使用规范
+- 必须使用的库：
+  - flutter_riverpod：状态管理和依赖注入
+  - auto_route：路由管理
+  - dio：网络请求
+  - sqflite：本地存储
+  - flutter_secure_storage：安全存储
+  - flutter_svg：SVG图标支持
+  - intl：国际化
+- 可选的库：
+  - speech_to_text：语音识别
+  - camera：相机支持
+  - geolocator：位置服务
+  - flutter_local_notifications：本地通知
+
+## 数据安全规范
+- 用户数据加密存储
+- 实现匿名化处理机制
+- 遵循数据最小化原则
+- 提供清晰的隐私政策和用户授权机制
+
+## 测试规范
+- 单元测试：使用 flutter_test 和 mockito
+- 集成测试：使用 integration_test
+- UI测试：使用 flutter_driver
+- 测试覆盖率目标：80%以上
+
+## 代码审查
+- 提交前自测：确保代码可以正常编译和运行
+- 代码审查：所有代码必须经过至少一名其他开发者的审查
+- 性能审查：关键功能必须进行性能测试和优化
+- 代码质量检查：运行 CI/CD 脚本确保无linter警告和错误
+
+## 性能优化
+- 使用const构造函数：对于不变的Widget使用const构造函数
+- 避免不必要的重建：合理使用StatefulWidget和状态管理
+- 图片优化：使用适当大小和格式的图片，考虑使用缓存
+- 列表优化：对于长列表使用ListView.builder或CustomScrollView
+- 动画优化：使用显式动画控制器，避免过度动画
+- 网络优化：使用缓存和本地存储策略减少网络请求
+- 使用代码分析和性能分析工具定期检查和优化性能瓶颈
+
+# 索克生活服务器架构规范
+
+## 后端架构
+- 采用微服务架构设计
+- 使用Node.js开发RESTful API服务
+- 使用Nginx作为反向代理和负载均衡
+- 服务包括：API网关、LLM服务、RAG服务、用户服务、内容服务和静态文件服务
+
+## 数据存储
+- 使用MySQL作为主要关系型数据库
+- 使用Redis进行缓存和会话管理
+
+## 部署规范
+- 服务器环境：Alibaba Cloud ECS (CentOS 8)
+- 服务管理：systemd服务
+- 日志管理：集中存储在/var/www/suoke.life/logs/
+- 主页: http://118.31.223.213/
+- API网关: http://118.31.223.213/api/
+- LLM服务: http://118.31.223.213/ai/
+- 用户服务: http://118.31.223.213/users/
+- 内容服务: http://118.31.223.213/content/
+
+## 安全规范
+- 使用fail2ban防止暴力攻击
+- 定期备份配置和数据
+- API访问控制和认证

@@ -1,0 +1,6 @@
+// Firebase模块特殊配置
+HEADER_SEARCH_PATHS = $(inherited) ${PODS_ROOT}/Firebase/CoreOnly/Sources ${PODS_ROOT}/Headers/Public/Firebase
+OTHER_CFLAGS = $(inherited) -Wno-error=non-modular-include-in-framework-module
+CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES
+APPLICATION_EXTENSION_API_ONLY = NO
+DEFINES_MODULE = YES 
